@@ -1,8 +1,12 @@
-import { Request, Response, NextFunction } from 'express';
-import { authService } from '../services/auth.service';
+import { Request, Response, NextFunction } from "express";
+import { authService } from "../services/auth.service";
 
 export const authController = {
-  async register(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async register(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const { name, email, password } = req.body as {
         name: string;
@@ -10,7 +14,7 @@ export const authController = {
         password: string;
       };
       const user = await authService.register({ name, email, password });
-      res.status(201).json({ message: 'Registration successful', user });
+      res.status(201).json({ message: "Registration successful", user });
     } catch (err) {
       next(err);
     }
@@ -18,7 +22,10 @@ export const authController = {
 
   async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { email, password } = req.body as { email: string; password: string };
+      const { email, password } = req.body as {
+        email: string;
+        password: string;
+      };
       const result = await authService.login({ email, password });
       res.status(200).json(result);
     } catch (err) {
@@ -28,6 +35,6 @@ export const authController = {
 
   logout(_req: Request, res: Response): void {
     // Stateless JWT — client discards token
-    res.status(200).json({ message: 'Logged out successfully' });
+    res.status(200).json({ message: "Logged out successfully" });
   },
 };

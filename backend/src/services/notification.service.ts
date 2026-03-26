@@ -1,8 +1,11 @@
-import { Server as SocketServer } from 'socket.io';
-import { NotificationModel, NotificationType } from '../models/notification.model';
-import { UserModel } from '../models/user.model';
-import { NotFoundError, ForbiddenError } from '../utils/error';
-import { logger } from '../utils/logger';
+import { Server as SocketServer } from "socket.io";
+import {
+  NotificationModel,
+  NotificationType,
+} from "../models/notification.model";
+import { UserModel } from "../models/user.model";
+import { NotFoundError, ForbiddenError } from "../utils/error";
+import { logger } from "../utils/logger";
 
 let ioInstance: SocketServer | null = null;
 
@@ -29,13 +32,13 @@ export const notificationService = {
         type,
         message,
         lead: leadId ?? null,
-      }))
+      })),
     );
 
     if (ioInstance) {
       docs.forEach((doc) => {
         const room = `user:${doc.user.toString()}`;
-        ioInstance!.to(room).emit('notification', {
+        ioInstance!.to(room).emit("notification", {
           _id: doc._id,
           user: doc.user,
           type: doc.type,
@@ -46,7 +49,9 @@ export const notificationService = {
         });
       });
     } else {
-      logger.warn('Socket.IO not initialized — notifications not dispatched in real-time');
+      logger.warn(
+        "Socket.IO not initialized — notifications not dispatched in real-time",
+      );
     }
 
     return docs;
@@ -56,20 +61,30 @@ export const notificationService = {
     type: NotificationType,
     message: string,
     leadId?: string,
-    excludeUserId?: string
+    excludeUserId?: string,
   ) {
     const recipients = await UserModel.find({
-      role: { $in: ['admin', 'manager'] },
+      role: { $in: ["admin", "manager"] },
       ...(excludeUserId ? { _id: { $ne: excludeUserId } } : {}),
-    }).select('_id');
+    }).select("_id");
 
     const userIds = recipients.map((u) => u._id.toString());
     if (userIds.length === 0) return;
 
-    await notificationService.createAndDispatch({ userIds, type, message, leadId });
+    await notificationService.createAndDispatch({
+      userIds,
+      type,
+      message,
+      leadId,
+    });
   },
 
-  async getNotifications(userId: string, role: string, page: number, limit: number) {
+  async getNotifications(
+    userId: string,
+    role: string,
+    page: number,
+    limit: number,
+  ) {
     const skip = (page - 1) * limit;
 
     // sales can only see their own; admin/manager also see their own (own mailbox)
@@ -80,7 +95,7 @@ export const notificationService = {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .populate('lead', 'name status')
+        .populate("lead", "name status")
         .lean(),
       NotificationModel.countDocuments(filter),
     ]);
@@ -99,11 +114,11 @@ export const notificationService = {
   async markAsRead(notificationId: string, userId: string, role: string) {
     const notification = await NotificationModel.findById(notificationId);
 
-    if (!notification) throw new NotFoundError('Notification');
+    if (!notification) throw new NotFoundError("Notification");
 
     // Only owner or admin can mark as read
-    if (notification.user.toString() !== userId && role !== 'admin') {
-      throw new ForbiddenError('You do not have access to this notification');
+    if (notification.user.toString() !== userId && role !== "admin") {
+      throw new ForbiddenError("You do not have access to this notification");
     }
 
     notification.read = true;

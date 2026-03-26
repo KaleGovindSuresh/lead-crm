@@ -1,12 +1,8 @@
-import { HydratedDocument, Types } from 'mongoose';
-import { LeadModel, LeadSource, LeadStatus, ILead } from '../models/lead.model';
-import { UserModel } from '../models/user.model';
-import { notificationService } from './notification.service.js';
-import {
-  NotFoundError,
-  ForbiddenError,
-  ValidationError,
-} from '../utils/error';
+import { HydratedDocument, Types } from "mongoose";
+import { LeadModel, LeadSource, LeadStatus, ILead } from "../models/lead.model";
+import { UserModel } from "../models/user.model";
+import { notificationService } from "./notification.service.js";
+import { NotFoundError, ForbiddenError, ValidationError } from "../utils/error";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,8 +44,11 @@ export interface LeadListQuery {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function buildOwnershipFilter(userId: string, role: string): Record<string, unknown> {
-  if (role === 'sales') {
+function buildOwnershipFilter(
+  userId: string,
+  role: string,
+): Record<string, unknown> {
+  if (role === "sales") {
     return {
       $or: [
         { createdBy: new Types.ObjectId(userId) },
@@ -60,14 +59,20 @@ function buildOwnershipFilter(userId: string, role: string): Record<string, unkn
   return {};
 }
 
-const ALLOWED_SORT_FIELDS = ['name', 'status', 'source', 'createdAt', 'updatedAt'];
-const ALLOWED_SORT_ORDERS = ['asc', 'desc'];
+const ALLOWED_SORT_FIELDS = [
+  "name",
+  "status",
+  "source",
+  "createdAt",
+  "updatedAt",
+];
+const ALLOWED_SORT_ORDERS = ["asc", "desc"];
 
 function parseSortParam(sort?: string): Record<string, 1 | -1> {
   const defaultSort: Record<string, 1 | -1> = { createdAt: -1, _id: -1 };
   if (!sort) return defaultSort;
 
-  const [field, order] = sort.split(':');
+  const [field, order] = sort.split(":");
   if (
     !field ||
     !order ||
@@ -77,7 +82,7 @@ function parseSortParam(sort?: string): Record<string, 1 | -1> {
     return defaultSort;
   }
 
-  return { [field]: order === 'asc' ? 1 : -1, _id: -1 };
+  return { [field]: order === "asc" ? 1 : -1, _id: -1 };
 }
 
 // ─── Service ─────────────────────────────────────────────────────────────────
@@ -87,14 +92,16 @@ export const leadService = {
     const { requestingUserRole, createdBy, assignedTo, ...rest } = input;
 
     // Only manager/admin can assign on create
-    if (assignedTo && requestingUserRole === 'sales') {
-      throw new ForbiddenError('Sales users cannot assign leads during creation');
+    if (assignedTo && requestingUserRole === "sales") {
+      throw new ForbiddenError(
+        "Sales users cannot assign leads during creation",
+      );
     }
 
     // Validate assignedTo user exists if provided
     if (assignedTo) {
       const assignee = await UserModel.findById(assignedTo);
-      if (!assignee) throw new ValidationError('Assigned user does not exist');
+      if (!assignee) throw new ValidationError("Assigned user does not exist");
     }
 
     const createdById = new Types.ObjectId(createdBy);
@@ -107,13 +114,15 @@ export const leadService = {
     })) as HydratedDocument<ILead>;
 
     // Trigger notifications
-    const managersAdmins = await UserModel.find({ role: { $in: ['admin', 'manager'] } }).select('_id');
+    const managersAdmins = await UserModel.find({
+      role: { $in: ["admin", "manager"] },
+    }).select("_id");
     const notifyIds = new Set(managersAdmins.map((u) => u._id.toString()));
     if (assignedTo) notifyIds.add(assignedTo);
 
     await notificationService.createAndDispatch({
       userIds: Array.from(notifyIds),
-      type: 'lead_created',
+      type: "lead_created",
       message: `New lead "${lead.name}" was created`,
       leadId: lead._id.toString(),
     });
@@ -123,16 +132,16 @@ export const leadService = {
 
   async getLeadById(leadId: string, userId: string, role: string) {
     const lead = await LeadModel.findById(leadId)
-      .populate('createdBy', 'name email')
-      .populate('assignedTo', 'name email');
+      .populate("createdBy", "name email")
+      .populate("assignedTo", "name email");
 
-    if (!lead) throw new NotFoundError('Lead');
+    if (!lead) throw new NotFoundError("Lead");
 
-    if (role === 'sales') {
+    if (role === "sales") {
       const isOwner =
         lead.createdBy._id.toString() === userId ||
         (lead.assignedTo && lead.assignedTo._id.toString() === userId);
-      if (!isOwner) throw new ForbiddenError('Access denied to this lead');
+      if (!isOwner) throw new ForbiddenError("Access denied to this lead");
     }
 
     return lead;
@@ -142,28 +151,28 @@ export const leadService = {
     leadId: string,
     input: UpdateLeadInput,
     userId: string,
-    role: string
+    role: string,
   ) {
     const lead = await LeadModel.findById(leadId);
-    if (!lead) throw new NotFoundError('Lead');
+    if (!lead) throw new NotFoundError("Lead");
 
     // Ownership check for sales
-    if (role === 'sales') {
+    if (role === "sales") {
       const isOwner =
         lead.createdBy.toString() === userId ||
         (lead.assignedTo && lead.assignedTo.toString() === userId);
-      if (!isOwner) throw new ForbiddenError('Access denied to this lead');
+      if (!isOwner) throw new ForbiddenError("Access denied to this lead");
     }
 
     // Sales cannot change assignedTo
-    if ('assignedTo' in input && role === 'sales') {
-      throw new ForbiddenError('Sales users cannot reassign leads');
+    if ("assignedTo" in input && role === "sales") {
+      throw new ForbiddenError("Sales users cannot reassign leads");
     }
 
     // Validate new assignee
     if (input.assignedTo) {
       const assignee = await UserModel.findById(input.assignedTo);
-      if (!assignee) throw new ValidationError('Assigned user does not exist');
+      if (!assignee) throw new ValidationError("Assigned user does not exist");
     }
 
     const prevStatus = lead.status;
@@ -177,7 +186,7 @@ export const leadService = {
     if (input.source !== undefined) updatePayload.source = input.source;
     if (input.status !== undefined) updatePayload.status = input.status;
     if (input.notes !== undefined) updatePayload.notes = input.notes;
-    if ('assignedTo' in input) {
+    if ("assignedTo" in input) {
       updatePayload.assignedTo = input.assignedTo
         ? new Types.ObjectId(input.assignedTo)
         : null;
@@ -190,13 +199,15 @@ export const leadService = {
 
     // Status changed
     if (input.status && input.status !== prevStatus) {
-      const recipients = await UserModel.find({ role: { $in: ['admin', 'manager'] } }).select('_id');
+      const recipients = await UserModel.find({
+        role: { $in: ["admin", "manager"] },
+      }).select("_id");
       const notifyIds = new Set(recipients.map((u) => u._id.toString()));
       if (lead.assignedTo) notifyIds.add(lead.assignedTo.toString());
 
       await notificationService.createAndDispatch({
         userIds: Array.from(notifyIds),
-        type: 'lead_status_changed',
+        type: "lead_status_changed",
         message: `Lead "${lead.name}" status changed from ${prevStatus} to ${input.status}`,
         leadId: lead._id.toString(),
       });
@@ -206,7 +217,7 @@ export const leadService = {
     if (newAssignedTo && !prevAssignedTo) {
       await notificationService.createAndDispatch({
         userIds: [newAssignedTo],
-        type: 'lead_assigned',
+        type: "lead_assigned",
         message: `Lead "${lead.name}" has been assigned to you`,
         leadId: lead._id.toString(),
       });
@@ -216,28 +227,28 @@ export const leadService = {
     if (newAssignedTo && prevAssignedTo && newAssignedTo !== prevAssignedTo) {
       await notificationService.createAndDispatch({
         userIds: [newAssignedTo],
-        type: 'lead_reassigned',
+        type: "lead_reassigned",
         message: `Lead "${lead.name}" has been reassigned to you`,
         leadId: lead._id.toString(),
       });
     }
 
     return lead.populate([
-      { path: 'createdBy', select: 'name email' },
-      { path: 'assignedTo', select: 'name email' },
+      { path: "createdBy", select: "name email" },
+      { path: "assignedTo", select: "name email" },
     ]);
   },
 
   async deleteLead(leadId: string, userId: string, role: string) {
     const lead = await LeadModel.findById(leadId);
-    if (!lead) throw new NotFoundError('Lead');
+    if (!lead) throw new NotFoundError("Lead");
 
     // Ownership check for sales
-    if (role === 'sales') {
+    if (role === "sales") {
       const isOwner =
         lead.createdBy.toString() === userId ||
         (lead.assignedTo && lead.assignedTo.toString() === userId);
-      if (!isOwner) throw new ForbiddenError('Access denied to this lead');
+      if (!isOwner) throw new ForbiddenError("Access denied to this lead");
     }
 
     const leadName = lead.name;
@@ -247,9 +258,9 @@ export const leadService = {
 
     // Notify managers/admins
     await notificationService.notifyManagersAndAdmins(
-      'lead_deleted',
+      "lead_deleted",
       `Lead "${leadName}" was deleted`,
-      leadId_
+      leadId_,
     );
   },
 
@@ -267,28 +278,35 @@ export const leadService = {
     } = query;
 
     const page = Math.max(1, parseInt(String(query.page ?? 1), 10));
-    const limit = Math.min(100, Math.max(1, parseInt(String(query.limit ?? 10), 10)));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(String(query.limit ?? 10), 10)),
+    );
     const skip = (page - 1) * limit;
 
     // Base filter — ownership for sales
-    const matchFilter: Record<string, unknown> = buildOwnershipFilter(userId, role);
+    const matchFilter: Record<string, unknown> = buildOwnershipFilter(
+      userId,
+      role,
+    );
 
     // Search
     if (q) {
-      matchFilter['$or'] = [
-        { name: { $regex: q, $options: 'i' } },
-        { email: { $regex: q, $options: 'i' } },
-        { phone: { $regex: q, $options: 'i' } },
+      matchFilter["$or"] = [
+        { name: { $regex: q, $options: "i" } },
+        { email: { $regex: q, $options: "i" } },
+        { phone: { $regex: q, $options: "i" } },
       ];
     }
 
-    if (status) matchFilter['status'] = status;
-    if (source) matchFilter['source'] = source;
+    if (status) matchFilter["status"] = status;
+    if (source) matchFilter["source"] = source;
 
     // assignedTo filter — manager/admin only
-    const assignedToId = typeof assignedTo === 'string' ? assignedTo : undefined;
-    if (assignedToId && role !== 'sales') {
-      matchFilter['assignedTo'] = new Types.ObjectId(assignedToId);
+    const assignedToId =
+      typeof assignedTo === "string" ? assignedTo : undefined;
+    if (assignedToId && role !== "sales") {
+      matchFilter["assignedTo"] = new Types.ObjectId(assignedToId);
     }
 
     // Date range
@@ -296,16 +314,16 @@ export const leadService = {
       const dateFilter: Record<string, Date> = {};
       if (createdFrom) {
         const d = new Date(createdFrom);
-        if (!isNaN(d.getTime())) dateFilter['$gte'] = d;
+        if (!isNaN(d.getTime())) dateFilter["$gte"] = d;
       }
       if (createdTo) {
         const d = new Date(createdTo);
         if (!isNaN(d.getTime())) {
           d.setHours(23, 59, 59, 999);
-          dateFilter['$lte'] = d;
+          dateFilter["$lte"] = d;
         }
       }
-      if (Object.keys(dateFilter).length) matchFilter['createdAt'] = dateFilter;
+      if (Object.keys(dateFilter).length) matchFilter["createdAt"] = dateFilter;
     }
 
     const sortObj = parseSortParam(sort);
@@ -320,30 +338,30 @@ export const leadService = {
             { $limit: limit },
             {
               $lookup: {
-                from: 'users',
-                localField: 'createdBy',
-                foreignField: '_id',
-                as: 'createdBy',
+                from: "users",
+                localField: "createdBy",
+                foreignField: "_id",
+                as: "createdBy",
                 pipeline: [{ $project: { name: 1, email: 1 } }],
               },
             },
             {
               $lookup: {
-                from: 'users',
-                localField: 'assignedTo',
-                foreignField: '_id',
-                as: 'assignedTo',
+                from: "users",
+                localField: "assignedTo",
+                foreignField: "_id",
+                as: "assignedTo",
                 pipeline: [{ $project: { name: 1, email: 1 } }],
               },
             },
             {
               $addFields: {
-                createdBy: { $arrayElemAt: ['$createdBy', 0] },
-                assignedTo: { $arrayElemAt: ['$assignedTo', 0] },
+                createdBy: { $arrayElemAt: ["$createdBy", 0] },
+                assignedTo: { $arrayElemAt: ["$assignedTo", 0] },
               },
             },
           ],
-          total: [{ $count: 'count' }],
+          total: [{ $count: "count" }],
         },
       },
     ]);
@@ -369,25 +387,25 @@ export const leadService = {
       const dateFilter: Record<string, Date> = {};
       if (createdFrom) {
         const d = new Date(createdFrom);
-        if (!isNaN(d.getTime())) dateFilter['$gte'] = d;
+        if (!isNaN(d.getTime())) dateFilter["$gte"] = d;
       }
       if (createdTo) {
         const d = new Date(createdTo);
         if (!isNaN(d.getTime())) {
           d.setHours(23, 59, 59, 999);
-          dateFilter['$lte'] = d;
+          dateFilter["$lte"] = d;
         }
       }
-      if (Object.keys(dateFilter).length) matchFilter['createdAt'] = dateFilter;
+      if (Object.keys(dateFilter).length) matchFilter["createdAt"] = dateFilter;
     }
 
     const results = await LeadModel.aggregate([
       { $match: matchFilter },
       {
         $facet: {
-          totalLeads: [{ $count: 'count' }],
-          byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
-          bySource: [{ $group: { _id: '$source', count: { $sum: 1 } } }],
+          totalLeads: [{ $count: "count" }],
+          byStatus: [{ $group: { _id: "$status", count: { $sum: 1 } } }],
+          bySource: [{ $group: { _id: "$source", count: { $sum: 1 } } }],
         },
       },
     ]);
@@ -396,18 +414,24 @@ export const leadService = {
     const totalLeads = raw?.totalLeads[0]?.count ?? 0;
 
     // Normalize — ensure all enum values present
-    const statusEnums: LeadStatus[] = ['new', 'contacted', 'qualified', 'won', 'lost'];
-    const sourceEnums: LeadSource[] = ['website', 'referral', 'cold', 'other'];
+    const statusEnums: LeadStatus[] = [
+      "new",
+      "contacted",
+      "qualified",
+      "won",
+      "lost",
+    ];
+    const sourceEnums: LeadSource[] = ["website", "referral", "cold", "other"];
 
     const byStatus: Record<string, number> = Object.fromEntries(
-      statusEnums.map((s) => [s, 0])
+      statusEnums.map((s) => [s, 0]),
     );
     for (const item of raw?.byStatus ?? []) {
       if (item._id in byStatus) byStatus[item._id] = item.count;
     }
 
     const bySource: Record<string, number> = Object.fromEntries(
-      sourceEnums.map((s) => [s, 0])
+      sourceEnums.map((s) => [s, 0]),
     );
     for (const item of raw?.bySource ?? []) {
       if (item._id in bySource) bySource[item._id] = item.count;
