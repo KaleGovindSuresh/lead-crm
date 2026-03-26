@@ -1,7 +1,5 @@
-declare global {
-  namespace Express {
-    interface Request {
-      user?: any; // replace with your user type
-    }
-  }
+import { Request } from 'express';
+
+export interface AuthenticatedRequest extends Request {
+  user?: any; // replace with your actual User type if you have one
 }
