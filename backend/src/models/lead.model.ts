@@ -11,7 +11,7 @@ export interface ILead extends Document {
   status: LeadStatus;
   notes?: string;
   createdBy: Types.ObjectId;
-  assignedTo?: Types.ObjectId;
+  assignedTo?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }

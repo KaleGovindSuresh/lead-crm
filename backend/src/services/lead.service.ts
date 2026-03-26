@@ -1,7 +1,7 @@
-import { Types } from 'mongoose';
-import { LeadModel, LeadSource, LeadStatus } from '../models/lead.model';
+import { HydratedDocument, Types } from 'mongoose';
+import { LeadModel, LeadSource, LeadStatus, ILead } from '../models/lead.model';
 import { UserModel } from '../models/user.model';
-import { notificationService } from './notification.service';
+import { notificationService } from './notification.service.js';
 import {
   NotFoundError,
   ForbiddenError,
@@ -48,7 +48,7 @@ export interface LeadListQuery {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function buildOwnershipFilter(userId: string, role: string): object {
+function buildOwnershipFilter(userId: string, role: string): Record<string, unknown> {
   if (role === 'sales') {
     return {
       $or: [
@@ -97,11 +97,14 @@ export const leadService = {
       if (!assignee) throw new ValidationError('Assigned user does not exist');
     }
 
-    const lead = await LeadModel.create({
+    const createdById = new Types.ObjectId(createdBy);
+    const assignedToId = assignedTo ? new Types.ObjectId(assignedTo) : null;
+
+    const lead = (await LeadModel.create({
       ...rest,
-      createdBy,
-      assignedTo: assignedTo ?? null,
-    });
+      createdBy: createdById,
+      assignedTo: assignedToId,
+    })) as HydratedDocument<ILead>;
 
     // Trigger notifications
     const managersAdmins = await UserModel.find({ role: { $in: ['admin', 'manager'] } }).select('_id');
@@ -167,8 +170,20 @@ export const leadService = {
     const prevAssignedTo = lead.assignedTo?.toString();
     const newAssignedTo = input.assignedTo;
 
-    // Apply updates
-    Object.assign(lead, input);
+    const updatePayload: Partial<ILead> = {};
+    if (input.name !== undefined) updatePayload.name = input.name;
+    if (input.phone !== undefined) updatePayload.phone = input.phone;
+    if (input.email !== undefined) updatePayload.email = input.email;
+    if (input.source !== undefined) updatePayload.source = input.source;
+    if (input.status !== undefined) updatePayload.status = input.status;
+    if (input.notes !== undefined) updatePayload.notes = input.notes;
+    if ('assignedTo' in input) {
+      updatePayload.assignedTo = input.assignedTo
+        ? new Types.ObjectId(input.assignedTo)
+        : null;
+    }
+
+    Object.assign(lead, updatePayload);
     await lead.save();
 
     // ── Notification triggers ───────────────────────────────────────────────
@@ -271,8 +286,9 @@ export const leadService = {
     if (source) matchFilter['source'] = source;
 
     // assignedTo filter — manager/admin only
-    if (assignedTo && role !== 'sales') {
-      matchFilter['assignedTo'] = new Types.ObjectId(assignedTo);
+    const assignedToId = typeof assignedTo === 'string' ? assignedTo : undefined;
+    if (assignedToId && role !== 'sales') {
+      matchFilter['assignedTo'] = new Types.ObjectId(assignedToId);
     }
 
     // Date range

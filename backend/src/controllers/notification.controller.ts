@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { notificationService } from '../services/notification.service';
+import { notificationService } from '../services/notification.service.js';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { ValidationError } from '../utils/error';
 

@@ -1,6 +1,18 @@
 import { Response, NextFunction } from 'express';
 import { leadService } from '../services/lead.service';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
+import { ValidationError } from '../utils/error';
+
+function toSingleString(value: unknown): string | undefined {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) {
+    for (let i = value.length - 1; i >= 0; i -= 1) {
+      const next = toSingleString(value[i]);
+      if (next) return next;
+    }
+  }
+  return undefined;
+}
 
 export const leadController = {
   async createLead(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
@@ -38,7 +50,15 @@ export const leadController = {
     try {
       const user = req.user!;
       const result = await leadService.listLeads({
-        ...req.query as Record<string, string>,
+        q: toSingleString(req.query['q']),
+        status: toSingleString(req.query['status']),
+        source: toSingleString(req.query['source']),
+        assignedTo: toSingleString(req.query['assignedTo']),
+        createdFrom: toSingleString(req.query['createdFrom']),
+        createdTo: toSingleString(req.query['createdTo']),
+        sort: toSingleString(req.query['sort']),
+        page: toSingleString(req.query['page']),
+        limit: toSingleString(req.query['limit']),
         userId: user.id,
         role: user.role,
       });
@@ -51,7 +71,9 @@ export const leadController = {
   async getLeadById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = req.user!;
-      const lead = await leadService.getLeadById(req.params['id']!, user.id, user.role);
+      const leadId = toSingleString(req.params['id']);
+      if (!leadId) throw new ValidationError('Lead ID is required');
+      const lead = await leadService.getLeadById(leadId, user.id, user.role);
       res.status(200).json({ lead });
     } catch (err) {
       next(err);
@@ -61,12 +83,9 @@ export const leadController = {
   async updateLead(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = req.user!;
-      const lead = await leadService.updateLead(
-        req.params['id']!,
-        req.body as any,
-        user.id,
-        user.role
-      );
+      const leadId = toSingleString(req.params['id']);
+      if (!leadId) throw new ValidationError('Lead ID is required');
+      const lead = await leadService.updateLead(leadId, req.body as any, user.id, user.role);
       res.status(200).json({ message: 'Lead updated successfully', lead });
     } catch (err) {
       next(err);
@@ -76,7 +95,9 @@ export const leadController = {
   async deleteLead(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = req.user!;
-      await leadService.deleteLead(req.params['id']!, user.id, user.role);
+      const leadId = toSingleString(req.params['id']);
+      if (!leadId) throw new ValidationError('Lead ID is required');
+      await leadService.deleteLead(leadId, user.id, user.role);
       res.status(200).json({ message: 'Lead deleted successfully' });
     } catch (err) {
       next(err);
@@ -85,10 +106,8 @@ export const leadController = {
 
   async getStatsSummary(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { createdFrom, createdTo } = req.query as {
-        createdFrom?: string;
-        createdTo?: string;
-      };
+      const createdFrom = toSingleString(req.query['createdFrom']);
+      const createdTo = toSingleString(req.query['createdTo']);
       const stats = await leadService.getStatsSummary(createdFrom, createdTo);
       res.status(200).json(stats);
     } catch (err) {

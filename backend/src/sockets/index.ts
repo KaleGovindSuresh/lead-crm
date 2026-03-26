@@ -3,7 +3,7 @@ import { Server as SocketServer, Socket } from 'socket.io';
 import { config } from '../config/env';
 import { verifyToken } from '../utils/jwt';
 import { logger } from '../utils/logger';
-import { setSocketIO } from '../services/notification.service';
+import { setSocketIO } from '../services/notification.service.js';
 
 interface SocketWithUser extends Socket {
   userId?: string;
@@ -52,7 +52,7 @@ export function initSocketIO(httpServer: HttpServer): SocketServer {
     // Client can request their unread count
     socket.on('get:unread-count', async () => {
       try {
-        const { notificationService } = await import('../services/notification.service');
+        const { notificationService } = await import('../services/notification.service.js');
         const count = await notificationService.getUnreadCount(userId);
         socket.emit('unread-count', { count });
       } catch (err) {
