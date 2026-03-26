@@ -16,25 +16,22 @@ export const NotificationsList = () => {
   const [error, setError] = useState<string | null>(null);
   const [markingId, setMarkingId] = useState<string | null>(null);
 
-  const fetchNotifications = useCallback(
-    async (pageToLoad = 1) => {
-      setError(null);
-      setIsLoading(true);
-      try {
-        const result = await notificationsApi.getNotifications({
-          page: pageToLoad,
-          limit: 12,
-        });
-        setNotifications(result.data);
-        setPagination(result.pagination);
-      } catch {
-        setError("Failed to load notifications.");
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
+  const fetchNotifications = useCallback(async (pageToLoad = 1) => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const result = await notificationsApi.getNotifications({
+        page: pageToLoad,
+        limit: 12,
+      });
+      setNotifications(result.data);
+      setPagination(result.pagination);
+    } catch {
+      setError("Failed to load notifications.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchNotifications(page);
@@ -46,8 +43,10 @@ export const NotificationsList = () => {
       await notificationsApi.markAsRead(id);
       setNotifications((prev) =>
         prev.map((notification) =>
-          notification._id === id ? { ...notification, read: true } : notification
-        )
+          notification._id === id
+            ? { ...notification, read: true }
+            : notification,
+        ),
       );
       showToast("Notification marked as read", "success");
     } catch {
@@ -60,10 +59,7 @@ export const NotificationsList = () => {
   if (isLoading) return <PageLoader />;
   if (error)
     return (
-      <ErrorState
-        message={error}
-        onRetry={() => fetchNotifications(page)}
-      />
+      <ErrorState message={error} onRetry={() => fetchNotifications(page)} />
     );
 
   const canPrev = page > 1;

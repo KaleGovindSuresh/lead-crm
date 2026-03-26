@@ -18,10 +18,12 @@ export const leadsApi = {
    * GET /leads
    * Supports filtering, sorting, and pagination via query params.
    */
-  getLeads: async (params: LeadFiltersParams = {}): Promise<GetLeadsResponse> => {
+  getLeads: async (
+    params: LeadFiltersParams = {},
+  ): Promise<GetLeadsResponse> => {
     // Strip undefined so Axios doesn't serialize empty keys
     const cleanParams = Object.fromEntries(
-      Object.entries(params).filter(([, v]) => v !== undefined && v !== "")
+      Object.entries(params).filter(([, v]) => v !== undefined && v !== ""),
     );
     const { data } = await api.get<GetLeadsResponse>("/leads", {
       params: cleanParams,
@@ -53,11 +55,11 @@ export const leadsApi = {
    */
   updateLead: async (
     id: string,
-    body: LeadBody
+    body: LeadBody,
   ): Promise<LeadMutationResponse> => {
     const { data } = await api.patch<LeadMutationResponse>(
       `/leads/${id}`,
-      body
+      body,
     );
     return data;
   },
@@ -77,7 +79,7 @@ export const leadsApi = {
    */
   getSummary: async (params: SummaryParams = {}): Promise<LeadsSummary> => {
     const cleanParams = Object.fromEntries(
-      Object.entries(params).filter(([, v]) => v !== undefined && v !== "")
+      Object.entries(params).filter(([, v]) => v !== undefined && v !== ""),
     );
     const { data } = await api.get<{
       totalLeads: number;

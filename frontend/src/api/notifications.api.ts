@@ -13,7 +13,7 @@ export const notificationsApi = {
    * Returns paginated list of notifications for the current user.
    */
   getNotifications: async (
-    params: GetNotificationsParams = {}
+    params: GetNotificationsParams = {},
   ): Promise<GetNotificationsResponse> => {
     const { data } = await api.get<GetNotificationsResponse>("/notifications", {
       params,
@@ -28,7 +28,7 @@ export const notificationsApi = {
    */
   getUnreadCount: async (): Promise<number> => {
     const { data } = await api.get<UnreadCountResponse>(
-      "/notifications/unread-count"
+      "/notifications/unread-count",
     );
     return data.unreadCount;
   },
@@ -39,7 +39,7 @@ export const notificationsApi = {
    */
   markAsRead: async (id: string): Promise<MarkReadResponse> => {
     const { data } = await api.patch<MarkReadResponse>(
-      `/notifications/${id}/read`
+      `/notifications/${id}/read`,
     );
     return data;
   },

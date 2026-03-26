@@ -24,12 +24,12 @@ export const usersApi = {
    */
   updateUserRole: async (
     id: string,
-    role: Role
+    role: Role,
   ): Promise<UpdateRoleResponse> => {
     const body: UpdateRoleBody = { role };
     const { data } = await api.patch<UpdateRoleResponse>(
       `/users/${id}/role`,
-      body
+      body,
     );
     return data;
   },

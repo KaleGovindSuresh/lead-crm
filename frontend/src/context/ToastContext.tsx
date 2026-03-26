@@ -39,7 +39,9 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     return () => {
-      Object.values(timersRef.current).forEach((timer) => window.clearTimeout(timer));
+      Object.values(timersRef.current).forEach((timer) =>
+        window.clearTimeout(timer),
+      );
       timersRef.current = {};
     };
   }, []);
@@ -59,7 +61,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
       const timeout = window.setTimeout(() => removeToast(id), 4000);
       timersRef.current[id] = timeout;
     },
-    [removeToast]
+    [removeToast],
   );
 
   return (

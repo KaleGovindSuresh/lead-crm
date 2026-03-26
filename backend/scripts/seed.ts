@@ -76,9 +76,9 @@ async function seed() {
 
   const sampleLeads = [
     {
-      name: 'Rohan Mehta',
-      phone: '+91 98765 43210',
-      email: 'rohan.mehta@example.com',
+      name: 'Govind Kale',
+      phone: '+91 91308 14932',
+      email: 'govind.kale@example.com',
       source: 'website',
       status: 'new',
       notes: 'Interested in enterprise plan',

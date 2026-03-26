@@ -97,7 +97,9 @@
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
     color: #e2e8f0;
-    transition: border 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      border 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
   .input:focus,
@@ -129,7 +131,10 @@
     font-weight: 600;
     letter-spacing: 0.05em;
     gap: 0.35rem;
-    transition: background 0.2s ease, border 0.2s ease, color 0.2s ease;
+    transition:
+      background 0.2s ease,
+      border 0.2s ease,
+      color 0.2s ease;
   }
 
   .btn-primary {

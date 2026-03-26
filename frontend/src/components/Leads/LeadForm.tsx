@@ -54,7 +54,7 @@ export const LeadForm = ({
       assignedTo:
         typeof initialValues?.assignedTo === "object"
           ? initialValues.assignedTo?._id
-          : initialValues?.assignedTo ?? "",
+          : (initialValues?.assignedTo ?? ""),
     },
   });
 

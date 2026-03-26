@@ -1,9 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { authApi } from "../api/auth.api";
 import { connectSocket, disconnectSocket } from "../sockets/socket";
