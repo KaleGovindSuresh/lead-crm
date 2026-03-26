@@ -1,73 +1,44 @@
-# React + TypeScript + Vite
+# CRM+ Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+### Overview
+- React 19 + Vite SPA that talks to the backend via `src/api` abstractions and shows leads, dashboard stats, notifications, and RBAC-aware navigation.
+- Auth flows persist JWTs/identity in localStorage and reroute unauthenticated users to `/login`; the same token powers Socket.IO notifications through `src/sockets/socket.ts`.
+- Layout + page routing live in `src/routes/AppRouter.tsx`, using `usePermissions` to hide or guard admin-only routes.
 
-Currently, two official plugins are available:
+### Tech stack
+- React 19 + TypeScript
+- Vite 8 + Tailwind CSS 4 + ESLint
+- Axios (`src/api/axiosClient.ts`) with interceptors and Socket.IO client for realtime notifications
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Getting started
+1. `cd frontend && npm install`
+2. Create `.env.local` (or `.env`) with at least:
+   - `VITE_API_URL=http://localhost:4000/api` (or your backend URL)
+   - `VITE_SOCKET_URL=http://localhost:4000`
+3. Run `npm run dev` (Vite dev server) and keep it running while you work.
+4. For production-ready builds: `npm run build` followed by `npm run preview` to verify the generated assets.
+5. Run `npm run lint` to check for ESLint issues before shipping.
 
-## React Compiler
+> Note: Backend must allow CORS from the frontend URL (see `backend/.env` `CLIENT_URL`) so set `CLIENT_URL=http://localhost:5173` when running both sides locally.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Key directories
+- `src/api/*` – Axios wrapper + modules for auth, users, leads, and notifications (`authApi`, `leadsApi`, `usersApi`, `notificationsApi`).
+- `src/context` – `AuthContext` bootstraps stored tokens, exposes `login/logout/register`, and wires Socket.IO; `ToastContext` renders transient toasts.
+- `src/routes/AppRouter.tsx` – defines public (login/register) and protected (leads, dashboard, notifications, users) routes plus permission/role guards.
+- `src/components` – grouped UI pieces (`Layout/AppLayout`, `Leads`, `Dashboard`, `Notifications`, `Auth` forms, and shared `UI` primitives).
+- `src/sockets/socket.ts` – manages a singleton Socket.IO client authenticated via the stored JWT.
 
-## Expanding the ESLint configuration
+### Auth & permissions
+- `AuthContext` stores user/token pairs in localStorage, automatically reconnects Socket.IO for authenticated sessions, and exposes `isBootstrapping` so routes can wait for hydration.
+- `usePermissions` maps roles to scopes (`lead:read`, `lead:write`, `dashboard:read`, `notification:read`, etc.), so navigation links and routes render only when the backend would authorize them.
+- API swap is safe: Axios interceptors clear storage and redirect to `/login` on `401` responses.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Common scripts
+- `npm run dev` – launches the Vite dev server on `http://localhost:5173` by default.
+- `npm run build` – compiles the app into `dist`.
+- `npm run preview` – serves the built assets locally for smoke tests.
+- `npm run lint` – runs ESLint rules defined at the project root.
 
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
-
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
-```
+### References
+- `docs/crm-frontend-plan.md` – detailed frontend architecture, api plan, hooks, and component ideas.
+- `backend/README.md` – for backend setup and env requirements so the two halves stay in sync.
