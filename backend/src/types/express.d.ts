@@ -1,9 +1,7 @@
-import { AuthUser } from "../middlewares/auth.middleware";
-
 declare global {
   namespace Express {
     interface Request {
-      user?: AuthUser;
+      user?: any; // replace with your user type
     }
   }
 }
